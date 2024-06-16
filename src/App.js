@@ -27,7 +27,7 @@ function App() {
   });
 
   const [jobs, setJobs] = useState([
-    { description: '', price: '', vat: 0 }
+    { description: '', price: 0, vat: 0 }
   ]);
 
   const [summary, setSummary] = useState({
@@ -79,7 +79,7 @@ function App() {
     }
 
     if (index === jobs.length - 1 && name === 'description' && value !== '') {
-      setJobs([...newJobs, { description: '', price: '', vat: 0 }]);
+      setJobs([...newJobs, { description: '', price: 0, vat: 0 }]);
     }
   };
 
