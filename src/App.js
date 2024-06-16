@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-
-// eslint-disable-next-line
 import html2pdf from 'html2pdf.js';
+import { Grid, TextField, Typography, Paper, Button, CircularProgress } from '@mui/material';
 
 function App() {
   const initialClientInfo = {
@@ -103,7 +102,6 @@ function App() {
     setJobs(jobsCopy);
 
     setTimeout(() => {
-      // Mostra elementi PDF-only e nascondi elementi no-pdf
       const noPdfElements = document.querySelectorAll('.no-pdf');
       noPdfElements.forEach(el => el.style.display = 'none');
       const pdfOnlyElements = document.querySelectorAll('.pdf-only');
@@ -122,27 +120,23 @@ function App() {
         const pdfUrl = URL.createObjectURL(pdfBlob);
         const pdfWindow = window.open(pdfUrl, '_blank');
 
-        // Ripristina la visualizzazione originale
         noPdfElements.forEach(el => el.style.display = '');
         pdfOnlyElements.forEach(el => el.style.display = 'none');
         setLoading(false);
         setJobs([...jobsCopy, { description: '', price: 0, vat: 0 }]);
 
-        // Forza il ricalcolo degli stili del layout
         const buttonsContainer = document.querySelector('.no-pdf');
         buttonsContainer.style.display = 'none';
         setTimeout(() => {
           buttonsContainer.style.display = 'flex';
         }, 0);
 
-        // Se l'opzione di stampa è selezionata, avvia la stampa
         if (shouldPrint) {
           pdfWindow.addEventListener('load', () => {
             pdfWindow.print();
           });
         }
       }).catch(() => {
-        // Ripristina la visualizzazione originale
         noPdfElements.forEach(el => el.style.display = '');
         pdfOnlyElements.forEach(el => el.style.display = 'none');
         setLoading(false);
@@ -150,7 +144,6 @@ function App() {
       });
     }, 0);
   };
-
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f7fafc', padding: '1rem' }} ref={pdfRef}>
@@ -205,150 +198,247 @@ function App() {
             align-items: center;
           }
 
-          .input-group {
-            display: flex;
-            flex-direction: column;
-            margin-bottom: 1rem;
-          }
-
-          .input-group label {
-            margin-bottom: 0.25rem;
-            font-weight: bold;
-          }
-
-          .input-group input {
-            padding: 0.5rem;
-            border: 1px solid #e2e8f0;
-            border-radius: 0.25rem;
-          }
-
           .pdf-only {
             display: none;
           }
         `}
       </style>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', padding: '1rem', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', borderRadius: '0.5rem', marginBottom: '1rem' }}>
-        <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 'bold' }}>PREVENTIVO</h1>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-          <div style={{ display: 'grid', justifyItems: 'start', gridTemplateColumns: 'auto auto', gap: '0.5rem' }}>
-            <p style={{ margin: 0 }}>Data:</p>
-            <p style={{ margin: 0 }}>{new Date().toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' })}</p>
-            <label htmlFor="quoteNumber" style={{ margin: 0 }} >N° preventivo:</label>
-            <input id="quoteNumber" className="no-pdf" style={{ padding: '0.25rem', border: '1px solid #e2e8f0', borderRadius: '0.25rem', width: '100px' }} value={quoteNumber} onChange={(e) => setQuoteNumber(e.target.value)} />
-            <span className="pdf-only" style={{ padding: '0.25rem', width: '100px' }} > {quoteNumber}</span>
-          </div>
-        </div>
-      </header>
+      <Paper elevation={3} style={{ padding: '1rem', marginBottom: '1rem' }}>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} md={6}>
+            <Typography variant="h4" component="h1">PREVENTIVO</Typography>
+          </Grid>
+          <Grid item xs={12} md={6} container justifyContent="flex-end">
+            <Grid item xs={12} sm="auto" container direction="column" alignItems="flex-end">
+              <Grid item container spacing={1}>
+                <Grid item xs={6}>
+                  <Typography>Data:</Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography>{new Date().toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' })}</Typography>
+                </Grid>
+              </Grid>
+              <Grid item container spacing={1}>
+                <Grid item xs={6}>
+                  <Typography>N° preventivo:</Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    id="quoteNumber"
+                    className="no-pdf"
+                    variant="outlined"
+                    size="small"
+                    value={quoteNumber}
+                    onChange={(e) => setQuoteNumber(e.target.value)}
+                    style={{ width: '100px' }}
+                  />
+                  <Typography className="pdf-only">{quoteNumber}</Typography>
+                </Grid>
+              </Grid>
+            </Grid>
+          </Grid>
+        </Grid>
+      </Paper>
 
-      <section style={{ display: 'flex', justifyContent: 'space-between', backgroundColor: '#fff', padding: '1rem', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', borderRadius: '0.5rem', marginBottom: '1rem' }}>
-        <div style={{ width: '48%' }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.5rem' }}>AZIENDA</h2>
-          <p><strong >Nome:</strong> {companyInfo.name}</p>
-          <p><strong>Indirizzo:</strong> {companyInfo.address}</p>
-          <p><strong>P.IVA / C.F:</strong> {companyInfo.taxId}</p>
-          <p><strong>Email:</strong> {companyInfo.email}</p>
-          <p><strong>Telefono:</strong> {companyInfo.phone}</p>
-        </div>
-        <div style={{ width: '1px', backgroundColor: '#e2e8f0' }}></div>
-        <div style={{ width: '48%' }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.5rem' }}>CLIENTE</h2>
-          <div style={{ display: 'flex', marginBottom: '0.5rem' }}>
-            <label className="no-pdf" style={{ width: '30%' }}><strong>Nome:</strong></label>
-            <input className="no-pdf" style={{ flex: 1, padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.25rem' }} name="name" placeholder="Nome" value={clientInfo.name} onChange={handleClientInfoChange} />
-            <span className="pdf-only"><strong>Nome:</strong> {clientInfo.name}</span>
-          </div>
-          <div style={{ display: 'flex', marginBottom: '0.5rem' }}>
-            <label className="no-pdf" style={{ width: '30%' }}><strong>Indirizzo:</strong></label>
-            <input className="no-pdf" style={{ flex: 1, padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.25rem' }} name="address" placeholder="Indirizzo" value={clientInfo.address} onChange={handleClientInfoChange} />
-            <span className="pdf-only"><strong>Indirizzo:</strong> {clientInfo.address}</span>
-          </div>
-          <div style={{ display: 'flex', marginBottom: '0.5rem' }}>
-            <label className="no-pdf" style={{ width: '30%' }}><strong>P.IVA / C.F:</strong></label>
-            <input className="no-pdf" style={{ flex: 1, padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.25rem' }} name="taxId" placeholder="P.IVA / C.F" value={clientInfo.taxId} onChange={handleClientInfoChange} />
-            <span className="pdf-only"><strong>P.IVA / C.F:</strong> {clientInfo.taxId}</span>
-          </div>
-          <div style={{ display: 'flex', marginBottom: '0.5rem' }}>
-            <label className="no-pdf" style={{ width: '30%' }}><strong>Email:</strong></label>
-            <input className="no-pdf" style={{ flex: 1, padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.25rem' }} name="email" placeholder="Email" value={clientInfo.email} onChange={handleClientInfoChange} />
-            <span className="pdf-only"><strong>Email:</strong> {clientInfo.email}</span>
-          </div>
-          <div style={{ display: 'flex', marginBottom: '0.5rem' }}>
-            <label className="no-pdf" style={{ width: '30%' }}><strong>Telefono:</strong></label>
-            <input className="no-pdf" style={{ flex: 1, padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.25rem' }} name="phone" placeholder="Telefono" value={clientInfo.phone} onChange={handleClientInfoChange} />
-            <span className="pdf-only"><strong>Telefono:</strong> {clientInfo.phone}</span>
-          </div>
-        </div>
-      </section>
-      <section style={{ backgroundColor: '#fff', padding: '1rem', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', borderRadius: '0.5rem', marginBottom: '1rem' }}>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.5rem' }}>DETTAGLI VEICOLO</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '0.5rem' }}>
-          <div className="input-group">
-            <label htmlFor="brand" className="no-pdf">Marca Auto:</label>
-            <input className="no-pdf" id="brand" name="brand" placeholder="Marca Auto" value={vehicleInfo.brand} onChange={handleVehicleInfoChange} />
-            <span className="pdf-only"><strong>Marca Auto:</strong> {vehicleInfo.brand}</span>
-          </div>
-          <div className="input-group">
-            <label htmlFor="model" className="no-pdf">Modello Auto:</label>
-            <input className="no-pdf" id="model" name="model" placeholder="Modello Auto" value={vehicleInfo.model} onChange={handleVehicleInfoChange} />
-            <span className="pdf-only"><strong>Modello Auto:</strong> {vehicleInfo.model}</span>
-          </div>
-          <div className="input-group">
-            <label htmlFor="licensePlate" className="no-pdf">Targa Auto:</label>
-            <input className="no-pdf" id="licensePlate" name="licensePlate" placeholder="Targa Auto" value={vehicleInfo.licensePlate} onChange={handleVehicleInfoChange} />
-            <span className="pdf-only"><strong>Targa Auto:</strong> {vehicleInfo.licensePlate}</span>
-          </div>
-        </div>
-      </section>
-      <section style={{ backgroundColor: '#fff', padding: '1rem', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', borderRadius: '0.5rem', marginBottom: '1rem' }}>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.5rem' }}>DESCRIZIONE DEI LAVORI</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: '0.5fr 2fr 1fr 1fr', gap: '1rem', marginBottom: '0.5rem' }}>
-          <div style={{ fontWeight: '600' }}>ID</div>
-          <div style={{ fontWeight: '600' }}>DESCRIZIONE</div>
-          <div style={{ fontWeight: '600' }}>PREZZO</div>
-          <div style={{ fontWeight: '600' }}>ALIQUOTA IVA</div>
-        </div>
+      <Paper elevation={3} style={{ padding: '1rem', marginBottom: '1rem' }}>
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={6}>
+            <Typography variant="h6">AZIENDA</Typography>
+            <Typography><strong>Nome:</strong> {companyInfo.name}</Typography>
+            <Typography><strong>Indirizzo:</strong> {companyInfo.address}</Typography>
+            <Typography><strong>P.IVA / C.F:</strong> {companyInfo.taxId}</Typography>
+            <Typography><strong>Email:</strong> {companyInfo.email}</Typography>
+            <Typography><strong>Telefono:</strong> {companyInfo.phone}</Typography>
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <Typography variant="h6">CLIENTE</Typography>
+            {['name', 'address', 'taxId', 'email', 'phone'].map((field, index) => (
+              <Grid container spacing={2} key={index} style={{ marginBottom: 16 }}>
+                <Grid item xs={4} sm={3}>
+                  <Typography className="no-pdf">
+                    <strong>
+                      {field === 'taxId' ? 'P.IVA / C.F.' : field === 'phone' ? 'Telefono' : field.charAt(0).toUpperCase() + field.slice(1)}:
+                    </strong>
+                  </Typography>
+                </Grid>
+                <Grid item xs={8} sm={9}>
+                  <TextField
+                    className="no-pdf"
+                    fullWidth
+                    variant="outlined"
+                    size="small"
+                    name={field}
+                    placeholder={field === 'taxId' ? 'P.IVA / C.F.' : field === 'phone' ? 'Telefono' : field.charAt(0).toUpperCase() + field.slice(1)}
+                    value={clientInfo[field]}
+                    onChange={handleClientInfoChange}
+                  />
+                  <Typography className="pdf-only">
+                    <strong>
+                      {field === 'taxId' ? 'P.IVA / C.F.' : field === 'phone' ? 'Telefono' : field.charAt(0).toUpperCase() + field.slice(1)}:
+                    </strong> {clientInfo[field]}
+                  </Typography>
+                </Grid>
+              </Grid>
+            ))}
+          </Grid>
+        </Grid>
+      </Paper>
+
+      <Paper elevation={3} style={{ padding: '1rem', marginBottom: '1rem' }}>
+        <Typography variant="h6">DETTAGLI VEICOLO</Typography>
+        <Grid container spacing={2}>
+          {['brand', 'model', 'licensePlate'].map((field, index) => (
+            <Grid item xs={12} md={4} key={index}>
+              <TextField
+                className="no-pdf"
+                fullWidth
+                variant="outlined"
+                size="small"
+                label={field === 'licensePlate' ? 'Targa' : field === 'brand' ? 'Marca' :  field=== 'model' ? 'Modello': field.charAt(0).toUpperCase() + field.slice(1)}
+                name={field}
+                value={vehicleInfo[field]}
+                onChange={handleVehicleInfoChange}
+              />
+              <Typography className="pdf-only">
+                <strong>{field === 'licensePlate' ? 'Targa' : field === 'brand' ? 'Marca' : field === 'model' ? 'Modello' : field.charAt(0).toUpperCase() + field.slice(1)}:</strong> {vehicleInfo[field]}
+              </Typography>
+            </Grid>
+          ))}
+        </Grid>
+      </Paper>
+
+
+      <Paper elevation={3} style={{ padding: '1rem', marginBottom: '1rem' }}>
+        <Typography variant="h6">DESCRIZIONE DEI LAVORI</Typography>
+        <Grid container spacing={2}>
+          <Grid item xs={1}>
+            <Typography fontWeight="bold">ID</Typography>
+          </Grid>
+          <Grid item xs={5}>
+            <Typography fontWeight="bold">DESCRIZIONE</Typography>
+          </Grid>
+          <Grid item xs={3}>
+            <Typography fontWeight="bold">PREZZO</Typography>
+          </Grid>
+          <Grid item xs={3}>
+            <Typography fontWeight="bold">ALIQUOTA IVA</Typography>
+          </Grid>
+        </Grid>
         {jobs.map((job, index) => (
-          <div key={index} style={{ display: 'grid', gridTemplateColumns: '0.5fr 2fr 1fr 1fr', gap: '1rem', marginBottom: '0.5rem' }}>
-            <div>{index + 1}</div>
-            <input className="no-pdf" style={{ padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.25rem' }} name="description" placeholder="Descrizione" value={job.description} onChange={(e) => handleJobChange(index, e)} />
-            <span className="pdf-only">{job.description}</span>
-            <input className="no-pdf" style={{ padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.25rem' }} name="price" placeholder="Prezzo" type="number" value={job.price} onChange={(e) => handleJobChange(index, e)} />
-            <span className="pdf-only">{parseFloat(job.price).toFixed(2)} €</span>
-            <input className="no-pdf" style={{ padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.25rem' }} name="vat" placeholder="Aliquota IVA" type="number" value={job.vat} onChange={(e) => handleJobChange(index, e)} />
-            <span className="pdf-only">{job.vat}%</span>
-          </div>
+          <Grid container spacing={2} key={index} style={{ marginBottom: '1rem' }}>
+            <Grid item xs={1}>
+              <Typography>{index + 1}</Typography>
+            </Grid>
+            <Grid item xs={5}>
+              <TextField
+                className="no-pdf"
+                fullWidth
+                variant="outlined"
+                size="small"
+                name="description"
+                placeholder="Descrizione"
+                value={job.description}
+                onChange={(e) => handleJobChange(index, e)}
+              />
+              <Typography className="pdf-only">{job.description}</Typography>
+            </Grid>
+            <Grid item xs={3}>
+              <TextField
+                className="no-pdf"
+                fullWidth
+                variant="outlined"
+                size="small"
+                name="price"
+                placeholder="Prezzo"
+                type="number"
+                value={job.price}
+                onChange={(e) => handleJobChange(index, e)}
+              />
+              <Typography className="pdf-only">{parseFloat(job.price).toFixed(2)} €</Typography>
+            </Grid>
+            <Grid item xs={3}>
+              <TextField
+                className="no-pdf"
+                fullWidth
+                variant="outlined"
+                size="small"
+                name="vat"
+                placeholder="Aliquota IVA"
+                type="number"
+                value={job.vat}
+                onChange={(e) => handleJobChange(index, e)}
+              />
+              <Typography className="pdf-only">{job.vat}%</Typography>
+            </Grid>
+          </Grid>
         ))}
-      </section>
-      <section style={{ backgroundColor: '#fff', padding: '1rem', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', borderRadius: '0.5rem', marginBottom: '1rem' }} ref={pdfRef}>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.5rem', textAlign: 'center' }}>RIEPILOGO</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', fontSize: '1.125rem' }}>
-          <div></div>
-          <div style={{ textAlign: 'right', fontWeight: '600' }}>Subtotale: {summary.totalExclVAT.toFixed(2)} €</div>
-          <div></div>
-          <div style={{ textAlign: 'right', fontWeight: '600' }}>IVA: {summary.totalVAT.toFixed(2)} €</div>
-          <div></div>
-          <div style={{ fontWeight: 'bold', fontSize: '1.5rem', gridColumn: 'span 2', textAlign: 'right', marginTop: '1rem' }}>
-            Totale: {summary.totalInclVAT.toFixed(2)} €
-          </div>
-        </div>
-      </section>
+      </Paper>
 
-      <div style={{ display: 'flex', gap: '1rem', width: '100%', justifyContent: 'center', alignItems: 'center' }}>
-        <button className={`button no-pdf`} onClick={() => generatePDF(false)} disabled={loading}>
-          {loading ? <div className="loading-spinner"></div> : 'Genera PDF'}
-        </button>
+      <Paper elevation={3} style={{ padding: '1rem', marginBottom: '1rem' }}>
+        <Typography variant="h6" align="center">RIEPILOGO</Typography>
+        <Grid container spacing={2} justifyContent="flex-end">
+          <Grid item xs={12} md={6}>
+            <Grid container justifyContent="space-between">
+              <Grid item>
+                <Typography fontWeight="bold">Subtotale:</Typography>
+              </Grid>
+              <Grid item>
+                <Typography fontWeight="bold">{summary.totalExclVAT.toFixed(2)} €</Typography>
+              </Grid>
+            </Grid>
+            <Grid container justifyContent="space-between">
+              <Grid item>
+                <Typography fontWeight="bold">IVA:</Typography>
+              </Grid>
+              <Grid item>
+                <Typography fontWeight="bold">{summary.totalVAT.toFixed(2)} €</Typography>
+              </Grid>
+            </Grid>
+            <Grid container justifyContent="space-between" style={{ marginTop: '1rem' }}>
+              <Grid item>
+                <Typography fontWeight="bold" fontSize="1.5rem">Totale:</Typography>
+              </Grid>
+              <Grid item>
+                <Typography fontWeight="bold" fontSize="1.5rem">{summary.totalInclVAT.toFixed(2)} €</Typography>
+              </Grid>
+            </Grid>
+          </Grid>
+        </Grid>
+      </Paper>
 
-        <button className={`button no-pdf`} onClick={generatePDF} disabled={loading}>
-          {loading ? <div className="loading-spinner"></div> : 'Stampa PDF'}
-        </button>
-
-        <button className={`button no-pdf`} onClick={resetForm} disabled={loading}>
-          {loading ? <div className="loading-spinner"></div> : 'Reset'}
-        </button>
-      </div>
-
+      <Grid container spacing={2} justifyContent="center" className='no-pdf'>
+        <Grid item>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => generatePDF(false)}
+            disabled={loading}
+          >
+            {loading ? <CircularProgress size={24} /> : 'Genera PDF'}
+          </Button>
+        </Grid>
+        <Grid item>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={generatePDF}
+            disabled={loading}
+          >
+            {loading ? <CircularProgress size={24} /> : 'Stampa PDF'}
+          </Button>
+        </Grid>
+        <Grid item>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={resetForm}
+            disabled={loading}
+          >
+            {loading ? <CircularProgress size={24} /> : 'Reset'}
+          </Button>
+        </Grid>
+      </Grid>
     </div>
   );
 }
