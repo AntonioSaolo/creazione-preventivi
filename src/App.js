@@ -121,12 +121,17 @@ function App() {
         croppedContext.drawImage(canvas, 0, 0, canvas.width, croppedCanvas.height, 0, 0, canvas.width, croppedCanvas.height);
 
         const imgData = croppedCanvas.toDataURL('image/png');
-        const pdf = new jsPDF('l', 'mm', 'a4');
+        const pdf = new jsPDF('p', 'mm', 'a4');
         const imgProps = pdf.getImageProperties(imgData);
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
         pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-        pdf.save(`preventivo_${vehicleInfo.brand}_${vehicleInfo.model}_${vehicleInfo.licensePlate}.pdf`);
+
+        const pdfBlob = pdf.output('blob');
+        const blobURL = URL.createObjectURL(pdfBlob);
+
+        window.open(blobURL, '_blank');
+
         setLoading(false);
 
         setJobs([...jobsCopy, { description: '', price: '', vat: 0 }]);
