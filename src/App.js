@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+
+// eslint-disable-next-line
+import html2pdf from 'html2pdf.js';
 
 function App() {
   const [clientInfo, setClientInfo] = useState({
@@ -82,65 +83,49 @@ function App() {
     }
   };
 
-  // const handleSubmit = async () => {
-  //   const data = { clientInfo, vehicleInfo, jobs, summary };
-  //   await fetch('/api/save-quote', {
-  //     method: 'POST',
-  //     headers: {
-  //       'Content-Type': 'application/json'
-  //     },
-  //     body: JSON.stringify(data)
-  //   });
-  // };
-
   const pdfRef = useRef();
-  const summaryRef = useRef();
 
   const generatePDF = () => {
     setLoading(true);
 
     const jobsCopy = jobs.slice(0, jobs.length - 1);
-
     setJobs(jobsCopy);
 
     setTimeout(() => {
-      const input = pdfRef.current;
-      const summaryElement = summaryRef.current;
+      // Mostra elementi PDF-only e nascondi elementi no-pdf
+      const noPdfElements = document.querySelectorAll('.no-pdf');
+      noPdfElements.forEach(el => el.style.display = 'none');
+      const pdfOnlyElements = document.querySelectorAll('.pdf-only');
+      pdfOnlyElements.forEach(el => el.style.display = 'block');
 
-      html2canvas(input, { scale: 2 }).then(canvas => {
-        const summaryRect = summaryElement.getBoundingClientRect();
-        const inputRect = input.getBoundingClientRect();
+      const element = pdfRef.current;
+      const opt = {
+        margin: 1,
+        filename: `preventivo_${vehicleInfo.brand}_${vehicleInfo.model}_${vehicleInfo.licensePlate}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
 
-        const canvasHeight = summaryRect.bottom - inputRect.top;
+      html2pdf().set(opt).from(element).output('blob').then((pdfBlob) => {
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+        window.open(pdfUrl, '_blank');
 
-        const croppedCanvas = document.createElement('canvas');
-        const croppedContext = croppedCanvas.getContext('2d');
-        croppedCanvas.width = canvas.width;
-        croppedCanvas.height = canvasHeight * (canvas.height / inputRect.height);
-
-        croppedContext.drawImage(canvas, 0, 0, canvas.width, croppedCanvas.height, 0, 0, canvas.width, croppedCanvas.height);
-
-        const imgData = croppedCanvas.toDataURL('image/png');
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const imgProps = pdf.getImageProperties(imgData);
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-
-        const pdfBlob = pdf.output('blob');
-        const blobURL = URL.createObjectURL(pdfBlob);
-
-        window.open(blobURL, '_blank');
-
+        // Ripristina la visualizzazione originale
+        noPdfElements.forEach(el => el.style.display = '');
+        pdfOnlyElements.forEach(el => el.style.display = 'none');
         setLoading(false);
-
         setJobs([...jobsCopy, { description: '', price: '', vat: 0 }]);
       }).catch(() => {
+        // Ripristina la visualizzazione originale
+        noPdfElements.forEach(el => el.style.display = '');
+        pdfOnlyElements.forEach(el => el.style.display = 'none');
         setLoading(false);
         setJobs([...jobsCopy, { description: '', price: '', vat: 0 }]);
       });
     }, 0);
   };
+
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f7fafc', padding: '1rem' }} ref={pdfRef}>
@@ -211,6 +196,10 @@ function App() {
             border: 1px solid #e2e8f0;
             border-radius: 0.25rem;
           }
+
+          .pdf-only {
+            display: none;
+          }
         `}
       </style>
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', padding: '1rem', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', borderRadius: '0.5rem', marginBottom: '1rem' }}>
@@ -221,8 +210,9 @@ function App() {
           <div style={{ display: 'grid', justifyItems: 'start', gridTemplateColumns: 'auto auto', gap: '0.5rem' }}>
             <p style={{ margin: 0 }}>Data:</p>
             <p style={{ margin: 0 }}>{new Date().toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' })}</p>
-            <label htmlFor="quoteNumber" style={{ margin: 0 }}>N° preventivo:</label>
-            <input id="quoteNumber" style={{ padding: '0.25rem', border: '1px solid #e2e8f0', borderRadius: '0.25rem', width: '100px' }} value={quoteNumber} onChange={(e) => setQuoteNumber(e.target.value)} />
+            <label htmlFor="quoteNumber" style={{ margin: 0 }} >N° preventivo:</label>
+            <input id="quoteNumber" className="no-pdf" style={{ padding: '0.25rem', border: '1px solid #e2e8f0', borderRadius: '0.25rem', width: '100px' }} value={quoteNumber} onChange={(e) => setQuoteNumber(e.target.value)} />
+            <span className="pdf-only" style={{ padding: '0.25rem', width: '100px' }} > {quoteNumber}</span>
           </div>
         </div>
       </header>
@@ -230,7 +220,7 @@ function App() {
       <section style={{ display: 'flex', justifyContent: 'space-between', backgroundColor: '#fff', padding: '1rem', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', borderRadius: '0.5rem', marginBottom: '1rem' }}>
         <div style={{ width: '48%' }}>
           <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.5rem' }}>AZIENDA</h2>
-          <p><strong>Nome:</strong> {companyInfo.name}</p>
+          <p><strong >Nome:</strong> {companyInfo.name}</p>
           <p><strong>Indirizzo:</strong> {companyInfo.address}</p>
           <p><strong>P.IVA / C.F:</strong> {companyInfo.taxId}</p>
           <p><strong>Email:</strong> {companyInfo.email}</p>
@@ -240,24 +230,29 @@ function App() {
         <div style={{ width: '48%' }}>
           <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.5rem' }}>CLIENTE</h2>
           <div style={{ display: 'flex', marginBottom: '0.5rem' }}>
-            <label style={{ width: '30%' }}><strong>Nome:</strong></label>
-            <input style={{ flex: 1, padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.25rem' }} name="name" placeholder="Nome" value={clientInfo.name} onChange={handleClientInfoChange} />
+            <label className="no-pdf" style={{ width: '30%' }}><strong>Nome:</strong></label>
+            <input className="no-pdf" style={{ flex: 1, padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.25rem' }} name="name" placeholder="Nome" value={clientInfo.name} onChange={handleClientInfoChange} />
+            <span className="pdf-only"><strong>Nome:</strong> {clientInfo.name}</span>
           </div>
           <div style={{ display: 'flex', marginBottom: '0.5rem' }}>
-            <label style={{ width: '30%' }}><strong>Indirizzo:</strong></label>
-            <input style={{ flex: 1, padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.25rem' }} name="address" placeholder="Indirizzo" value={clientInfo.address} onChange={handleClientInfoChange} />
+            <label className="no-pdf" style={{ width: '30%' }}><strong>Indirizzo:</strong></label>
+            <input className="no-pdf" style={{ flex: 1, padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.25rem' }} name="address" placeholder="Indirizzo" value={clientInfo.address} onChange={handleClientInfoChange} />
+            <span className="pdf-only"><strong>Indirizzo:</strong> {clientInfo.address}</span>
           </div>
           <div style={{ display: 'flex', marginBottom: '0.5rem' }}>
-            <label style={{ width: '30%' }}><strong>P.IVA / C.F:</strong></label>
-            <input style={{ flex: 1, padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.25rem' }} name="taxId" placeholder="P.IVA / C.F" value={clientInfo.taxId} onChange={handleClientInfoChange} />
+            <label className="no-pdf" style={{ width: '30%' }}><strong>P.IVA / C.F:</strong></label>
+            <input className="no-pdf" style={{ flex: 1, padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.25rem' }} name="taxId" placeholder="P.IVA / C.F" value={clientInfo.taxId} onChange={handleClientInfoChange} />
+            <span className="pdf-only"><strong>P.IVA / C.F:</strong> {clientInfo.taxId}</span>
           </div>
           <div style={{ display: 'flex', marginBottom: '0.5rem' }}>
-            <label style={{ width: '30%' }}><strong>Email:</strong></label>
-            <input style={{ flex: 1, padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.25rem' }} name="email" placeholder="Email" value={clientInfo.email} onChange={handleClientInfoChange} />
+            <label className="no-pdf" style={{ width: '30%' }}><strong>Email:</strong></label>
+            <input className="no-pdf" style={{ flex: 1, padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.25rem' }} name="email" placeholder="Email" value={clientInfo.email} onChange={handleClientInfoChange} />
+            <span className="pdf-only"><strong>Email:</strong> {clientInfo.email}</span>
           </div>
           <div style={{ display: 'flex', marginBottom: '0.5rem' }}>
-            <label style={{ width: '30%' }}><strong>Telefono:</strong></label>
-            <input style={{ flex: 1, padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.25rem' }} name="phone" placeholder="Telefono" value={clientInfo.phone} onChange={handleClientInfoChange} />
+            <label className="no-pdf" style={{ width: '30%' }}><strong>Telefono:</strong></label>
+            <input className="no-pdf" style={{ flex: 1, padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.25rem' }} name="phone" placeholder="Telefono" value={clientInfo.phone} onChange={handleClientInfoChange} />
+            <span className="pdf-only"><strong>Telefono:</strong> {clientInfo.phone}</span>
           </div>
         </div>
       </section>
@@ -265,16 +260,19 @@ function App() {
         <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.5rem' }}>DETTAGLI VEICOLO</h2>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '0.5rem' }}>
           <div className="input-group">
-            <label htmlFor="brand">Marca Auto:</label>
-            <input id="brand" name="brand" placeholder="Marca Auto" value={vehicleInfo.brand} onChange={handleVehicleInfoChange} />
+            <label htmlFor="brand" className="no-pdf">Marca Auto:</label>
+            <input className="no-pdf" id="brand" name="brand" placeholder="Marca Auto" value={vehicleInfo.brand} onChange={handleVehicleInfoChange} />
+            <span className="pdf-only"><strong>Marca Auto:</strong> {vehicleInfo.brand}</span>
           </div>
           <div className="input-group">
-            <label htmlFor="model">Modello Auto:</label>
-            <input id="model" name="model" placeholder="Modello Auto" value={vehicleInfo.model} onChange={handleVehicleInfoChange} />
+            <label htmlFor="model" className="no-pdf">Modello Auto:</label>
+            <input className="no-pdf" id="model" name="model" placeholder="Modello Auto" value={vehicleInfo.model} onChange={handleVehicleInfoChange} />
+            <span className="pdf-only"><strong>Modello Auto:</strong> {vehicleInfo.model}</span>
           </div>
           <div className="input-group">
-            <label htmlFor="licensePlate">Targa Auto:</label>
-            <input id="licensePlate" name="licensePlate" placeholder="Targa Auto" value={vehicleInfo.licensePlate} onChange={handleVehicleInfoChange} />
+            <label htmlFor="licensePlate" className="no-pdf">Targa Auto:</label>
+            <input className="no-pdf" id="licensePlate" name="licensePlate" placeholder="Targa Auto" value={vehicleInfo.licensePlate} onChange={handleVehicleInfoChange} />
+            <span className="pdf-only"><strong>Targa Auto:</strong> {vehicleInfo.licensePlate}</span>
           </div>
         </div>
       </section>
@@ -289,13 +287,16 @@ function App() {
         {jobs.map((job, index) => (
           <div key={index} style={{ display: 'grid', gridTemplateColumns: '0.5fr 2fr 1fr 1fr', gap: '1rem', marginBottom: '0.5rem' }}>
             <div>{index + 1}</div>
-            <input style={{ padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.25rem' }} name="description" placeholder="Descrizione" value={job.description} onChange={(e) => handleJobChange(index, e)} />
-            <input style={{ padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.25rem' }} name="price" placeholder="Prezzo" type="number" value={job.price} onChange={(e) => handleJobChange(index, e)} />
-            <input style={{ padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.25rem' }} name="vat" placeholder="Aliquota IVA" type="number" value={job.vat} onChange={(e) => handleJobChange(index, e)} />
+            <input className="no-pdf" style={{ padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.25rem' }} name="description" placeholder="Descrizione" value={job.description} onChange={(e) => handleJobChange(index, e)} />
+            <span className="pdf-only">{job.description}</span>
+            <input className="no-pdf" style={{ padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.25rem' }} name="price" placeholder="Prezzo" type="number" value={job.price} onChange={(e) => handleJobChange(index, e)} />
+            <span className="pdf-only">{parseFloat(job.price).toFixed(2)} €</span>
+            <input className="no-pdf" style={{ padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.25rem' }} name="vat" placeholder="Aliquota IVA" type="number" value={job.vat} onChange={(e) => handleJobChange(index, e)} />
+            <span className="pdf-only">{job.vat}%</span>
           </div>
         ))}
       </section>
-      <section style={{ backgroundColor: '#fff', padding: '1rem', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', borderRadius: '0.5rem', marginBottom: '1rem' }} ref={summaryRef}>
+      <section style={{ backgroundColor: '#fff', padding: '1rem', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', borderRadius: '0.5rem', marginBottom: '1rem' }} ref={pdfRef}>
         <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.5rem', textAlign: 'center' }}>RIEPILOGO</h2>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', fontSize: '1.125rem' }}>
           <div></div>
@@ -309,8 +310,7 @@ function App() {
         </div>
       </section>
 
-      <div style={{ display: 'flex', gap: '1rem' }}>
-        {/* <button className="button" onClick={handleSubmit}>Salva</button> */}
+      <div style={{ display: 'flex', gap: '1rem' }} className="no-pdf">
         <button className="button" onClick={generatePDF} disabled={loading}>
           {loading ? <div className="loading-spinner"></div> : 'Genera PDF'}
         </button>
