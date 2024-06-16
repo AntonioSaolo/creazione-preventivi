@@ -4,20 +4,32 @@ import React, { useState, useEffect, useRef } from 'react';
 import html2pdf from 'html2pdf.js';
 
 function App() {
-  const [clientInfo, setClientInfo] = useState({
+  const initialClientInfo = {
     name: '',
     address: '',
     taxId: '',
     phone: '',
     email: ''
-  });
+  };
 
-  const [vehicleInfo, setVehicleInfo] = useState({
+  const initialVehicleInfo = {
     brand: '',
     model: '',
     licensePlate: ''
-  });
+  };
 
+  const initialJobs = [
+    { description: '', price: 0, vat: 0 }
+  ];
+
+  const initialSummary = {
+    totalExclVAT: 0,
+    totalVAT: 0,
+    totalInclVAT: 0
+  };
+
+  const [clientInfo, setClientInfo] = useState(initialClientInfo);
+  const [vehicleInfo, setVehicleInfo] = useState(initialVehicleInfo);
   const [companyInfo] = useState({
     name: 'Saolotech di Saolo Domenico',
     address: 'C/DA Cipparello, 31 89034 Bovalino (RC)',
@@ -25,17 +37,8 @@ function App() {
     phone: '333-3535809',
     email: 'domenico.saolo@gmail.com'
   });
-
-  const [jobs, setJobs] = useState([
-    { description: '', price: 0, vat: 0 }
-  ]);
-
-  const [summary, setSummary] = useState({
-    totalExclVAT: 0,
-    totalVAT: 0,
-    totalInclVAT: 0
-  });
-
+  const [jobs, setJobs] = useState(initialJobs);
+  const [summary, setSummary] = useState(initialSummary);
   const [quoteNumber, setQuoteNumber] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -83,9 +86,17 @@ function App() {
     }
   };
 
+  const resetForm = () => {
+    setClientInfo(initialClientInfo);
+    setVehicleInfo(initialVehicleInfo);
+    setJobs(initialJobs);
+    setSummary(initialSummary);
+    setQuoteNumber('');
+  };
+
   const pdfRef = useRef();
 
-  const generatePDF = () => {
+  const generatePDF = (shouldPrint = false) => {
     setLoading(true);
 
     const jobsCopy = jobs.slice(0, jobs.length - 1);
@@ -109,19 +120,33 @@ function App() {
 
       html2pdf().set(opt).from(element).output('blob').then((pdfBlob) => {
         const pdfUrl = URL.createObjectURL(pdfBlob);
-        window.open(pdfUrl, '_blank');
+        const pdfWindow = window.open(pdfUrl, '_blank');
 
         // Ripristina la visualizzazione originale
         noPdfElements.forEach(el => el.style.display = '');
         pdfOnlyElements.forEach(el => el.style.display = 'none');
         setLoading(false);
-        setJobs([...jobsCopy, { description: '', price: '', vat: 0 }]);
+        setJobs([...jobsCopy, { description: '', price: 0, vat: 0 }]);
+
+        // Forza il ricalcolo degli stili del layout
+        const buttonsContainer = document.querySelector('.no-pdf');
+        buttonsContainer.style.display = 'none';
+        setTimeout(() => {
+          buttonsContainer.style.display = 'flex';
+        }, 0);
+
+        // Se l'opzione di stampa è selezionata, avvia la stampa
+        if (shouldPrint) {
+          pdfWindow.addEventListener('load', () => {
+            pdfWindow.print();
+          });
+        }
       }).catch(() => {
         // Ripristina la visualizzazione originale
         noPdfElements.forEach(el => el.style.display = '');
         pdfOnlyElements.forEach(el => el.style.display = 'none');
         setLoading(false);
-        setJobs([...jobsCopy, { description: '', price: '', vat: 0 }]);
+        setJobs([...jobsCopy, { description: '', price: 0, vat: 0 }]);
       });
     }, 0);
   };
@@ -310,11 +335,20 @@ function App() {
         </div>
       </section>
 
-      <div style={{ display: 'flex', gap: '1rem' }} className="no-pdf">
-        <button className="button" onClick={generatePDF} disabled={loading}>
+      <div style={{ display: 'flex', gap: '1rem', width: '100%', justifyContent: 'center', alignItems: 'center' }}>
+        <button className={`button no-pdf`} onClick={() => generatePDF(false)} disabled={loading}>
           {loading ? <div className="loading-spinner"></div> : 'Genera PDF'}
         </button>
+
+        <button className={`button no-pdf`} onClick={generatePDF} disabled={loading}>
+          {loading ? <div className="loading-spinner"></div> : 'Stampa PDF'}
+        </button>
+
+        <button className={`button no-pdf`} onClick={resetForm} disabled={loading}>
+          {loading ? <div className="loading-spinner"></div> : 'Reset'}
+        </button>
       </div>
+
     </div>
   );
 }
